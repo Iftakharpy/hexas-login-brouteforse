@@ -14,7 +14,7 @@ db = psycopg2.connect(
     port = 5432
 )
 cursor = db.cursor()
-# cursor.executescript(open("./create_creedentials_table.sql", 'r').read())
+# cursor.executescript(open("./create_credentials_table.sql", 'r').read())
 insert_query = f"INSERT INTO credentials VALUES(%s, %s, %s, %s);"
 
 
