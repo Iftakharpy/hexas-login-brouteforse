@@ -83,7 +83,7 @@ class Login:
             raise LoginError
 
         if self.USER_NAME:
-            return self.USER_NAME
+            return self.USER_NAME.decode('utf-8')
 
         #extracting the user name from self.RESPONSE obj
         match_obj = self.USER_NAME_REXP.search(self.RESPONSE.content)
@@ -92,7 +92,7 @@ class Login:
         else:
             self.USER_NAME = "Coudn't find any username!"
 
-        return self.USER_NAME
+        return self.USER_NAME.decode('utf-8')
     
     def get_alert_message(self):
         if self.ALERT_MESSAGE:
