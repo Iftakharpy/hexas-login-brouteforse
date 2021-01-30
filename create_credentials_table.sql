@@ -1,6 +1,6 @@
 CREATE TABLE IF NOT EXISTS credentials (
-	id text,
-	pass text,
-	success text,
-	username text NOT NULL
+	id TEXT,
+	pass TEXT,
+	success BOOLEAN,
+	username TEXT
 );
