@@ -63,7 +63,9 @@ class Login:
         return False
     
     def is_username_possible(self):
-        return bool(self.USER_NAME)
+        """Return the possibility of the username being correct"""
+        self.get_alert_message()
+        return self.ALERT_MESSAGE != self.WRONG_USER_NAME_ERROR_MESSAGE
         
     def get_page_title(self):
         if self.PAGE_TITLE:
