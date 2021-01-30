@@ -1,2 +1,3 @@
 .vscode/
 credentials.csv
+/__pycache__/
