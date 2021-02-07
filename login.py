@@ -102,6 +102,7 @@ class Login:
             self.USER_NAME = match_obj.group(1)
         else:
             self.USER_NAME = "Coudn't find any username!"
+            return self.USER_NAME
 
         return self.USER_NAME.decode('utf-8').strip()
     
