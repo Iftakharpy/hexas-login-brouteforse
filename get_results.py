@@ -1,3 +1,6 @@
+import random
+import time
+import requests
 from requests import Session as session
 import re
 from queue import Queue
@@ -17,13 +20,27 @@ cursor = db.cursor()
 insert_query = f"INSERT INTO exams VALUES(%s, %s, %s, %s, to_date(%s, 'dd/mm/yyyy'), %s, %s);"
 
 
+def handle_requests_ConnectionError(fn, retry=0, min_wait=1, max_wait=3):
+    """Decorates the function to prevent raising requests.exceptions.ConnectionError error."""
+    def wrapper(self, *args, **kwargs):
+        try:
+            res = fn(self, *args, **kwargs)
+            return res
+        except requests.exceptions.ConnectionError:
+            wait_time = random.uniform(min_wait, max_wait)
+            time.sleep(wait_time)
+            print(f"{fn.__name__}({args, kwargs}) raised requests.exceptions.ConnectionError try: {retry}")
+            res = fn(self, *args, **kwargs)
+            return res
+    return wrapper
+
 class FetchExamResults:
     RESPONSE = b""
     REQUEST_HEADERS = {
         'User-Agent': 'Mozilla/5.0'
     }
 
-    ENROLLED_TEST_REXP = re.compile(rb"Test Enrolled[\w\W]*?<label  class=\"form-control\" >(\d+)</label>")
+    ENROLLED_TEST_REXP = re.compile(rb"Test Enrolled[\w\W]*?<label\s+class=\"form-control\"\s*>(\d+)</label>")
     RESULT_REXP = re.compile(rb"<tr>[\s]*<td>(.*?)</td>[\s]*<td>(.*?)</td>[\s]*<td>(.*?)</td>[\s]*<td>(.*?)</td>[\s]*<td>(.*?)</td>[\s]*<td>(.*?)</td>[\s]*</tr>")
 
     RESULT_URL = "http://appsznd.hexaszindabazar.com/php_action/fetchresultpartial.php"
@@ -42,6 +59,7 @@ class FetchExamResults:
         self.LOGIN_DATA['password'] = password
         self.BROWSER = session()
         self.login()
+        self.fetch_exam_results()
     
     def __repr__(self):
         return self.__str__()
@@ -67,6 +85,7 @@ class FetchExamResults:
         else:
             raise StopIteration
     
+    @handle_requests_ConnectionError
     def fetch_exam_results(self):
         self.RESPONSE = self.BROWSER.post(self.RESULT_URL)
         self.EXAMS = self.RESULT_REXP.finditer(self.RESPONSE.content)
@@ -74,6 +93,7 @@ class FetchExamResults:
     def get_enrolled_exam_number(self):
         return self.ENROLLED_EXAMS
     
+    @handle_requests_ConnectionError
     def login(self):
         self.RESPONSE = self.BROWSER.post(self.LOGIN_URL, headers=self.REQUEST_HEADERS, data=self.LOGIN_DATA)
         # response = self.BROWSER.post(self.LOGIN_URL, headers=self.REQUEST_HEADERS, data=self.LOGIN_DATA)
@@ -91,16 +111,20 @@ class FetchExamResults:
         else:
             self.EXAMS = []
     
+    @handle_requests_ConnectionError
     def logout(self):
         self.BROWSER.get(self.LOGOUT_URL)
 
 
 def save_result(user_id, password):
     browser = FetchExamResults(user_id, password)
+    results = 0
     for exam in browser:
         data = (user_id, *exam.values())
         cursor.execute(insert_query, data)
-        print(f"Done {user_id}")
+        results += 1
+    else:
+        print(f"Done {user_id} | Exams: {results}")
 
 def start_queue(queue: Queue):
     while not queue.empty():
@@ -135,4 +159,4 @@ def main(max_threads=300):
     db.commit()
     db.close()
 
-main(200)
+main(300)
