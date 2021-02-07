@@ -1,5 +1,7 @@
 import requests
 import re
+import time
+import random
 
 
 class LoginError(Exception):
@@ -30,21 +32,28 @@ class Login:
     ALERT_MESSAGE = b""
     WRONG_USER_NAME_ERROR_MESSAGE = b"Username doesnot exists"
     WRONG_PASSWORD_ERROR_MESSAGE = b"Incorrect username/password combination"
+    MIN_REQUEST_INTERVAL = 1 # wait for N seconds
+    MAX_REQUEST_INTERVAL = 3 # wait for N seconds
 
-    def __init__(self, user_id, password):
+    def __init__(self, user_id, password, tries = 1):
         self.credentials = {
             "user_name": user_id,
             "password": password
             }
-        
-        self.RESPONSE = requests.post( # post reqeust to the hexas login page
-            url = self.LOGIN_URL,
-            headers = self.REQUEST_HEADERS,
-            data = self.credentials
-            )
-        
-        if self.is_logged_in():
-            self.get_user_name()
+        try:
+            self.RESPONSE = requests.post( # post reqeust to the hexas login page
+                url = self.LOGIN_URL,
+                headers = self.REQUEST_HEADERS,
+                data = self.credentials
+                )
+
+            if self.is_logged_in():
+                self.get_user_name()
+        except requests.exceptions.ConnectionError:
+            random_interval = random.uniform(self.MIN_REQUEST_INTERVAL, self.MAX_REQUEST_INTERVAL)
+            time.sleep(random_interval)
+            print(f"requests.exceptions.ConnectionError raised on ID: {self.credentials['user_name']} current retry: {tries}")
+            self.__init__(user_id, password, tries+1)
     
     def __repr__(self):
         return self.__str__()
@@ -85,7 +94,7 @@ class Login:
             raise LoginError
 
         if self.USER_NAME:
-            return self.USER_NAME.decode('utf-8')
+            return self.USER_NAME.decode('utf-8').strip()
 
         #extracting the user name from self.RESPONSE obj
         match_obj = self.USER_NAME_REXP.search(self.RESPONSE.content)
@@ -94,7 +103,7 @@ class Login:
         else:
             self.USER_NAME = "Coudn't find any username!"
 
-        return self.USER_NAME.decode('utf-8')
+        return self.USER_NAME.decode('utf-8').strip()
     
     def get_alert_message(self):
         if self.ALERT_MESSAGE:
